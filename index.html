@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Libro de Cobros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#F1EFE8; --paper:#FAF9F5; --ink:#20302C; --ink-soft:#5B6B65;
+    --line:#D8D3C6; --gold:#A9791F; --gold-deep:#7E5A16; --teal:#2E5C52;
+    --red:#9C4A3A; --ok:#2E5C52;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#171D1B; --paper:#1F2925; --ink:#EDEAE1; --ink-soft:#9AA6A0;
+      --line:#3A443F; --gold:#D9A94A; --gold-deep:#E8C271; --teal:#7FB3A3; --red:#D98A78; --ok:#7FB3A3;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#171D1B; --paper:#1F2925; --ink:#EDEAE1; --ink-soft:#9AA6A0;
+    --line:#3A443F; --gold:#D9A94A; --gold-deep:#E8C271; --teal:#7FB3A3; --red:#D98A78; --ok:#7FB3A3;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',sans-serif; font-size:15px; line-height:1.5;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+    min-height:100%;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:28px 18px 60px;}
+  header{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap;}
+  h1{font-family:'Source Serif 4',serif; font-weight:700; font-size:28px; margin:0; letter-spacing:.2px;}
+  .sub{color:var(--ink-soft); font-size:13px; margin-top:2px;}
+  .totales{display:flex; gap:22px; margin:6px 0 26px; padding:14px 16px; background:var(--paper); border:1px solid var(--line); border-radius:6px; flex-wrap:wrap;}
+  .totales div{min-width:120px;}
+  .totales .label{font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em;}
+  .totales .num{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:17px; margin-top:2px;}
+  .btn{
+    appearance:none; border:1px solid var(--gold-deep); background:var(--gold); color:#241804;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:13.5px; padding:9px 16px;
+    border-radius:5px; cursor:pointer;
+  }
+  .btn:hover{filter:brightness(1.05);}
+  .btn.secondary{background:transparent; color:var(--ink); border-color:var(--line);}
+  .btn.small{padding:6px 11px; font-size:12.5px;}
+  .btn.danger{background:transparent; color:var(--red); border-color:var(--red);}
+  .btn[disabled]{opacity:.6; cursor:default;}
+
+  form.new-form, .auth-card{background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:16px; margin-bottom:24px;}
+  form.new-form h2{font-family:'Source Serif 4',serif; font-size:17px; margin:0 0 12px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  label{display:block; font-size:12px; color:var(--ink-soft); margin-bottom:4px;}
+  input[type=text],input[type=tel],input[type=number],input[type=date],input[type=email],input[type=password]{
+    width:100%; padding:8px 9px; border:1px solid var(--line); border-radius:4px;
+    background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; font-size:14px;
+  }
+  .field{margin-bottom:10px;}
+  .form-actions{display:flex; gap:8px; margin-top:8px; align-items:center;}
+
+  .lista{border-top:1px solid var(--line);}
+  .cliente{border-bottom:1px solid var(--line); padding:16px 2px;}
+  .cliente-head{display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;}
+  .persona{font-family:'Source Serif 4',serif; font-weight:700; font-size:17px;}
+  .meta{color:var(--ink-soft); font-size:12.5px; margin-top:3px;}
+  .cifras{display:flex; gap:20px; margin-top:10px; flex-wrap:wrap;}
+  .cifras .item{min-width:90px;}
+  .cifras .label{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em;}
+  .cifras .num{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15.5px;}
+  .num.resta.pagado{color:var(--ok);}
+  .num.resta.pendiente{color:var(--red);}
+  .barra{height:5px; background:var(--line); border-radius:3px; margin-top:10px; overflow:hidden;}
+  .barra > div{height:100%; background:var(--teal);}
+  .abono-row{display:flex; gap:8px; margin-top:12px; align-items:center; flex-wrap:wrap;}
+  .abono-row input{max-width:150px;}
+  details{margin-top:10px;}
+  summary{cursor:pointer; font-size:12.5px; color:var(--ink-soft);}
+  .historial{margin-top:8px; font-size:13px;}
+  .historial-row{display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px dashed var(--line);}
+  .historial-row .fecha{color:var(--ink-soft);}
+  .row-actions{display:flex; gap:8px; margin-top:10px;}
+  .empty{color:var(--ink-soft); text-align:center; padding:50px 10px; font-size:14px;}
+  .error{color:var(--red); font-size:13px; margin-top:8px;}
+  .auth-card{max-width:340px; margin:60px auto;}
+  .auth-card h1{font-size:22px; margin-bottom:4px;}
+  .toplink{background:none; border:none; color:var(--ink-soft); text-decoration:underline; cursor:pointer; font-size:13px; padding:0;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">Cargando…</div>
+
+<script>
+// ---- Configuración de Supabase para este proyecto ----
+const SUPABASE_URL = 'https://mjffefxttqgieogftgnw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_qSGEKPwAguY_SwZc85WeNQ_QPLSCNT_';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let session = null;
+let clientes = [];
+let formOpen = false;
+let authMode = 'login'; // 'login' | 'signup'
+let authError = '';
+
+function fmt(n){ return '$ ' + Math.round(n).toLocaleString('es-CO'); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(d){ const [y,m,day] = d.split('-'); return day+'/'+m+'/'+y; }
+function totalAbonado(c){ return (c.abonos||[]).reduce((s,a)=>s+Number(a.monto),0); }
+function resta(c){ return Number(c.valor) - totalAbonado(c); }
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+
+function renderAuth(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="auth-card">
+      <h1>Libro de Cobros</h1>
+      <div class="sub" style="margin-bottom:16px;">${authMode==='login' ? 'Inicia sesión' : 'Crea tu cuenta'}</div>
+      <form onsubmit="return handleAuth(event)">
+        <div class="field"><label>Correo</label><input type="email" id="a-email" required></div>
+        <div class="field"><label>Contraseña</label><input type="password" id="a-pass" required minlength="6"></div>
+        <div class="form-actions">
+          <button class="btn" type="submit">${authMode==='login' ? 'Entrar' : 'Crear cuenta'}</button>
+          <button type="button" class="toplink" onclick="authMode = authMode==='login'?'signup':'login'; authError=''; renderAuth();">
+            ${authMode==='login' ? '¿No tienes cuenta? Créala' : '¿Ya tienes cuenta? Inicia sesión'}
+          </button>
+        </div>
+        ${authError ? `<div class="error">${escapeHtml(authError)}</div>` : ''}
+      </form>
+    </div>
+  `;
+}
+
+async function handleAuth(e){
+  e.preventDefault();
+  authError = '';
+  const email = document.getElementById('a-email').value.trim();
+  const password = document.getElementById('a-pass').value;
+  const fn = authMode === 'login' ? sb.auth.signInWithPassword({email,password}) : sb.auth.signUp({email,password});
+  const { data, error } = await fn;
+  if(error){ authError = error.message; renderAuth(); return false; }
+  if(authMode === 'signup' && !data.session){
+    authError = 'Cuenta creada. Revisa tu correo para confirmar el acceso y luego inicia sesión.';
+    authMode = 'login';
+    renderAuth();
+    return false;
+  }
+  session = data.session;
+  await cargarDatos();
+  return false;
+}
+
+async function cerrarSesion(){
+  await sb.auth.signOut();
+  session = null;
+  clientes = [];
+  renderAuth();
+}
+
+async function cargarDatos(){
+  const app = document.getElementById('app');
+  app.innerHTML = 'Cargando…';
+  const { data, error } = await sb
+    .from('clientes')
+    .select('*, abonos(*)')
+    .order('fecha', {ascending:false});
+  if(error){ console.error(error); clientes = []; }
+  else clientes = data;
+  render();
+}
+
+function render(){
+  const app = document.getElementById('app');
+  const totalValor = clientes.reduce((s,c)=>s+Number(c.valor),0);
+  const totalResta = clientes.reduce((s,c)=>s+resta(c),0);
+
+  let html = `
+    <header>
+      <div>
+        <h1>Libro de Cobros</h1>
+        <div class="sub">${clientes.length} registro${clientes.length===1?'':'s'} · ${escapeHtml(session.user.email)}</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn" onclick="formOpen = !formOpen; render();">${formOpen ? 'Cancelar' : '+ Nuevo cobro'}</button>
+        <button class="btn secondary" onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <div class="totales">
+      <div><div class="label">Total en cartera</div><div class="num">${fmt(totalValor)}</div></div>
+      <div><div class="label">Total por cobrar</div><div class="num" style="color:var(--red)">${fmt(totalResta)}</div></div>
+      <div><div class="label">Total abonado</div><div class="num" style="color:var(--ok)">${fmt(totalValor-totalResta)}</div></div>
+    </div>
+  `;
+
+  if(formOpen){
+    html += `
+    <form class="new-form" onsubmit="return crearCliente(event)">
+      <h2>Nuevo cobro</h2>
+      <div class="grid2">
+        <div class="field"><label>Persona</label><input type="text" id="f-persona" required placeholder="Nombre completo"></div>
+        <div class="field"><label>Celular</label><input type="tel" id="f-celular" placeholder="300 000 0000"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Objeto / concepto</label><input type="text" id="f-objeto" required placeholder="Ej: Nevera, préstamo, mercancía..."></div>
+        <div class="field"><label>Valor total</label><input type="number" id="f-valor" required min="0" step="1000" placeholder="500000"></div>
+      </div>
+      <div class="field" style="max-width:200px;"><label>Fecha</label><input type="date" id="f-fecha" value="${today()}"></div>
+      <div class="form-actions"><button type="submit" class="btn">Guardar</button></div>
+    </form>`;
+  }
+
+  if(clientes.length === 0 && !formOpen){
+    html += `<div class="empty">Todavía no hay ningún cobro registrado.<br>Usa "+ Nuevo cobro" para crear el primero.</div>`;
+  } else {
+    html += `<div class="lista">`;
+    for(const c of clientes){
+      const ab = totalAbonado(c);
+      const r = resta(c);
+      const pct = c.valor > 0 ? Math.min(100, Math.round((ab/c.valor)*100)) : 0;
+      const restaClass = r <= 0 ? 'pagado' : 'pendiente';
+      const abonosOrdenados = [...(c.abonos||[])].sort((a,b)=> b.fecha.localeCompare(a.fecha));
+      html += `
+      <div class="cliente">
+        <div class="cliente-head">
+          <div>
+            <div class="persona">${escapeHtml(c.persona)}</div>
+            <div class="meta">${escapeHtml(c.objeto)} · Creado ${fmtDate(c.fecha)}${c.celular ? ' · ' + escapeHtml(c.celular) : ''}</div>
+          </div>
+        </div>
+        <div class="cifras">
+          <div class="item"><div class="label">Valor</div><div class="num">${fmt(c.valor)}</div></div>
+          <div class="item"><div class="label">Abonado</div><div class="num" style="color:var(--ok)">${fmt(ab)}</div></div>
+          <div class="item"><div class="label">Resta</div><div class="num resta ${restaClass}">${fmt(r)}</div></div>
+        </div>
+        <div class="barra"><div style="width:${pct}%"></div></div>
+        ${r > 0 ? `
+        <div class="abono-row">
+          <input type="number" min="1" step="1000" placeholder="Valor del abono" id="abono-${c.id}">
+          <button class="btn small" onclick="registrarAbono('${c.id}')">Registrar abono</button>
+        </div>` : `<div class="abono-row"><span style="color:var(--ok); font-size:13px;">Saldado</span></div>`}
+        ${abonosOrdenados.length > 0 ? `
+        <details>
+          <summary>Ver historial de abonos (${abonosOrdenados.length})</summary>
+          <div class="historial">
+            ${abonosOrdenados.map(a=>`
+              <div class="historial-row">
+                <span class="fecha">${fmtDate(a.fecha)}</span>
+                <span>${fmt(a.monto)}</span>
+                <span><a href="#" onclick="eliminarAbono('${a.id}'); return false;" style="color:var(--red); font-size:12px;">quitar</a></span>
+              </div>
+            `).join('')}
+          </div>
+        </details>` : ''}
+        <div class="row-actions">
+          <button class="btn danger small" onclick="eliminarCliente('${c.id}')">Eliminar registro</button>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  app.innerHTML = html;
+}
+
+async function crearCliente(e){
+  e.preventDefault();
+  const persona = document.getElementById('f-persona').value.trim();
+  const celular = document.getElementById('f-celular').value.trim();
+  const objeto = document.getElementById('f-objeto').value.trim();
+  const valor = parseFloat(document.getElementById('f-valor').value);
+  const fecha = document.getElementById('f-fecha').value || today();
+  if(!persona || !objeto || !valor || valor <= 0) return false;
+  const { error } = await sb.from('clientes').insert({
+    user_id: session.user.id, persona, celular, objeto, valor, fecha
+  });
+  if(error){ alert('No se pudo guardar: ' + error.message); return false; }
+  formOpen = false;
+  await cargarDatos();
+  return false;
+}
+
+async function registrarAbono(id){
+  const input = document.getElementById('abono-'+id);
+  const monto = parseFloat(input.value);
+  if(!monto || monto <= 0) return;
+  const c = clientes.find(x=>x.id===id);
+  if(!c) return;
+  const aplicado = Math.min(monto, resta(c));
+  const { error } = await sb.from('abonos').insert({ cliente_id: id, monto: aplicado, fecha: today() });
+  if(error){ alert('No se pudo registrar el abono: ' + error.message); return; }
+  await cargarDatos();
+}
+
+async function eliminarAbono(abonoId){
+  const { error } = await sb.from('abonos').delete().eq('id', abonoId);
+  if(error){ alert('No se pudo quitar el abono: ' + error.message); return; }
+  await cargarDatos();
+}
+
+async function eliminarCliente(id){
+  if(!confirm('¿Eliminar este registro y todo su historial de abonos?')) return;
+  const { error } = await sb.from('clientes').delete().eq('id', id);
+  if(error){ alert('No se pudo eliminar: ' + error.message); return; }
+  await cargarDatos();
+}
+
+(async () => {
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+  if(session) await cargarDatos();
+  else renderAuth();
+})();
+</script>
+</body>
+</html>
